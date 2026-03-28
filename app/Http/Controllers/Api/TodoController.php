@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Todo;
+use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 
 class TodoController extends Controller
@@ -33,6 +34,16 @@ class TodoController extends Controller
             'is_completed' => false,
         ]);
 
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'todo_id' => $todo->id,
+            'action' => 'todo_created',
+            'details' => [
+                'title' => $todo->title,
+                'is_completed' => $todo->is_completed,
+            ],
+        ]);
+
         return response()->json([
             'message' => 'Todo créée avec succès',
             'todo' => $todo
@@ -51,10 +62,30 @@ class TodoController extends Controller
             'is_completed' => ['required', 'boolean'],
         ]);
 
+        $oldData = [
+            'title' => $todo->title,
+            'description' => $todo->description,
+            'is_completed' => $todo->is_completed,
+        ];
+
         $todo->update([
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
             'is_completed' => $validated['is_completed'],
+        ]);
+
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'todo_id' => $todo->id,
+            'action' => 'todo_updated',
+            'details' => [
+                'before' => $oldData,
+                'after' => [
+                    'title' => $todo->title,
+                    'description' => $todo->description,
+                    'is_completed' => $todo->is_completed,
+                ],
+            ],
         ]);
 
         return response()->json([
@@ -68,6 +99,19 @@ class TodoController extends Controller
         $todo = Todo::where('id', $id)
             ->where('user_id', $request->user()->id)
             ->firstOrFail();
+
+        $details = [
+            'title' => $todo->title,
+            'description' => $todo->description,
+            'is_completed' => $todo->is_completed,
+        ];
+
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'todo_id' => $todo->id,
+            'action' => 'todo_deleted',
+            'details' => $details,
+        ]);
 
         $todo->delete();
 

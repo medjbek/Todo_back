@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -25,6 +26,15 @@ class AuthController extends Controller
         ]);
 
         $token = $user->createToken('taskflow-token')->plainTextToken;
+
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'todo_id' => null,
+            'action' => 'user_register',
+            'details' => [
+                'email' => $user->email,
+            ],
+        ]);
 
         return response()->json([
             'message' => 'Utilisateur créé',
@@ -50,6 +60,15 @@ class AuthController extends Controller
 
         $token = $user->createToken('taskflow-token')->plainTextToken;
 
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'todo_id' => null,
+            'action' => 'user_login',
+            'details' => [
+                'email' => $user->email,
+            ],
+        ]);
+
         return response()->json([
             'message' => 'Connexion réussie',
             'user' => $user,
@@ -59,6 +78,15 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'todo_id' => null,
+            'action' => 'user_logout',
+            'details' => [
+                'email' => $request->user()->email,
+            ],
+        ]);
+
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
